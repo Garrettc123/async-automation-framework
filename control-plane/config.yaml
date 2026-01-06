@@ -1,0 +1,62 @@
+# Control Plane Configuration
+control_plane:
+  name: "Async Automation Control Plane"
+  version: "1.0.0"
+  environment: "production"
+
+monitoring:
+  health_check_interval: 15  # seconds
+  auto_recovery_enabled: true
+  alert_threshold: 80  # percentage
+  max_recovery_attempts: 3
+
+workflows:
+  default_timeout: 300  # seconds
+  max_concurrent: 20
+  retry_strategy:
+    max_retries: 3
+    backoff_multiplier: 2
+    initial_delay: 1
+
+services:
+  revenue-engine:
+    port: 8080
+    health_endpoint: "/health"
+    min_replicas: 3
+    max_replicas: 20
+    cpu_threshold: 70
+    memory_threshold: 80
+    
+  database:
+    port: 5432
+    health_endpoint: "/health"
+    backup_interval: 3600  # 1 hour
+    connection_pool: 50
+    
+  api-gateway:
+    port: 80
+    health_endpoint: "/status"
+    rate_limit: 1000  # requests per minute
+    timeout: 30
+
+auto_recovery:
+  service_crash:
+    - restart_service
+    - verify_health
+    - restore_connections
+    
+  memory_leak:
+    - clear_cache
+    - restart_service
+    - scale_resources
+    
+  network_failure:
+    - reset_connections
+    - update_routing
+    - verify_connectivity
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  rotation: "daily"
+  retention_days: 30
